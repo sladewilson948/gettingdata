@@ -1,33 +1,63 @@
-#gathering user data and generatinga  text file with  all the data 
-from pywebio.input import *
-from pywebio.output import *
-def main():
-    name=input("Enter your name here : ",type=TEXT)
-    age=input("Enter age here : ",type=NUMBER)
-    select_language=select("Select prefrered language",options=['Hindi','English','Marathi'])
-    select_gender=radio("Select Gender",options=['Male','Female','Dont want to disclsoe'])
-    terms=checkbox("Do you agree to our terms and conditions",options=['Yes I agree',"No i don't agree"])
-    toast("Successfuly registered data")
-    put_text("Thank you for your time for the survey")
-    with open('data.txt','a') as file1:
-        file1.write(f'Your name : {name}\n')
-        file1.write(f'Your age : {age}\n')
-        file1.write(f'Prefered Language : {select_language}\n')
-        file1.write(f'Gender : {select_gender}')
-        file1.write(f'Terms : {terms}')
-if __name__=='__main__':
-    import argparse
-    from pywebio.platform.tornado_http import start_server as start_http_server
-    from pywebio import start_server as start_ws_server
+#the concept is to make a REST api that will create random credit cards numners check if they are valid or not generate random names emails and unique ids and then well store it in a mongo db as well all this will be done via flask application
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--port", type=int, default=8080)
-    parser.add_argument("--http", action="store_true", default=False, help='Whether to enable http protocol for communicates')
-    args = parser.parse_args()
+from flask import Flask, jsonify
+import random
 
-    if args.http:
-        start_http_server(main, port=args.port)
-    else:
-        # Since some cloud server may close idle connections (such as heroku),
-        # use `websocket_ping_interval` to  keep the connection alive
-        start_ws_server(main, port=args.port, websocket_ping_interval=30)
+data_dict = {}
+app = Flask(__name__)
+@app.route("/")
+def random_data_here():
+    fnames = ['Aman', 'Gaurav', 'Rachel', 'Tanushri', 'Salman', 'Peter']
+    lanmes = ['Dubey', 'Singh', 'Sharma', 'Pandit', 'Malone', 'Sinaghania']
+    cc_number = generate_valid_cards()
+    name = random.choice(fnames)+' '+random.choice(lanmes)
+    email = name.lower().replace(" ","_")+'@email.com'
+    contact_number = f'{random.randint(000,999):03}-{random.randint(000,999):03}-{random.randint(0000,9999):04}'
+    unique_id = f'{random.randint(00000,99999):05}'
+    
+    dict1 = {"name":name,
+            "email":email,
+            "contact_nmumber":contact_number,
+            "card_number":cc_number,
+            "unique_id":unique_id,
+            "card_number":cc_number,
+            "validity":"valid_card"
+            }
+    data_dict[len(data_dict.keys())]=dict1
+    return jsonify(data_dict)
+
+def absolute_sum(val):
+    val = str(val)
+    while len(val)!=1:
+        val = list(val)
+        val = [int(i) for i in val]
+        val = sum(val)
+        val = str(val)
+    return int(val)
+    
+
+def generate_valid_cards():
+    flag=True
+    while flag==True:
+        cc_number = f'{random.randint(0000,9999):04} {random.randint(0000,9999):04} {random.randint(0000,9999):04} {random.randint(0000,9999):04}'
+        card_number = cc_number
+        card_number = card_number.replace(" ","")
+        part1 = list(card_number[-1::-2])
+        part2 = list(card_number[-2::-2])
+        part1 = [int(i) for i in part1]
+        part2 = [2*int(i) for i in part2]
+        part2 = [absolute_sum(i) for i in part2]
+        sum_val = sum(part1)+sum(part2)
+        if sum_val%10==0:
+            flag=False
+            return cc_number
+        else:
+            pass
+            
+
+    
+    
+
+
+if __name__ == '__main__':
+    app.run()
